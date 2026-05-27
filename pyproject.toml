@@ -1,0 +1,33 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lemonade-agents"
+version = "0.1.0"
+description = "GAIA agents for the Lemonade Store suite — offline-first, AMD NPU"
+requires-python = ">=3.10"
+dependencies = ["amd-gaia>=0.19.0"]
+
+[project.entry-points."gaia.agents"]
+lemonade-helper    = "lemonade_agents.helper.agent:LemonadeHelperAgent"
+lemonade-cashier   = "lemonade_agents.cashier.agent:CashierAgent"
+lemonade-inventory = "lemonade_agents.inventory.agent:InventoryAgent"
+lemonade-accounting = "lemonade_agents.accounting.agent:AccountingAgent"
+lemonade-marketeer = "lemonade_agents.marketeer.agent:MarketerAgent"
+lemonade-supplier  = "lemonade_agents.supplier.agent:SupplierAgent"
+lemonade-reports   = "lemonade_agents.reports.agent:ReportsAgent"
+lemonade-security  = "lemonade_agents.security.agent:SecurityAgent"
+
+[project.scripts]
+lemonade-helper    = "lemonade_agents.helper.agent:main"
+lemonade-cashier   = "lemonade_agents.cashier.agent:main"
+lemonade-inventory = "lemonade_agents.inventory.agent:main"
+lemonade-accounting = "lemonade_agents.accounting.agent:main"
+lemonade-marketeer = "lemonade_agents.marketeer.agent:main"
+lemonade-supplier  = "lemonade_agents.supplier.agent:main"
+lemonade-reports   = "lemonade_agents.reports.agent:main"
+lemonade-security  = "lemonade_agents.security.agent:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lemonade_agents"]
