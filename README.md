@@ -7,6 +7,17 @@ and uses the local Lemonade SDK server for model calls. Department repos
 should not require this package in their base installs; they should keep
 it behind an optional `agents` extra.
 
+## Suite Runtime Boundary
+
+- This package is intentionally the GAIA/model dependency boundary for
+  the suite.
+- Base department repos install without this package. Use their
+  `make install-agents` target only on machines that should execute
+  local Lemonade SDK / GAIA agents.
+- Agents may draft, summarize, or route work, but department contracts
+  and owner approval gates remain authoritative.
+- No cloud model provider is enabled by this package.
+
 ## Offline Runtime
 
 Agents default to local Lemonade SDK/GAIA settings:
