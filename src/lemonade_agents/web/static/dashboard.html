@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Lemonade Store</title>
+<style>
+:root{--bg:#1a1a2e;--card:#16213e;--accent:#e94560;--text:#eee;--green:#0f3460;--gold:#ffd700}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+nav{background:var(--card);padding:12px 24px;display:flex;gap:16px;border-bottom:2px solid var(--accent)}
+nav a{color:var(--accent);text-decoration:none;font-weight:600;padding:6px 12px;border-radius:4px}
+nav a:hover,nav a.active{background:var(--accent);color:#fff}
+main{max-width:1000px;margin:24px auto;padding:0 16px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.kpi{background:var(--card);border-radius:12px;padding:24px;text-align:center}
+.kpi .num{font-size:36px;font-weight:700;color:var(--gold)}
+.kpi .label{color:#888;margin-top:8px;font-size:14px}
+.card{background:var(--card);border-radius:12px;padding:20px;margin-bottom:16px}
+.card h2{color:var(--accent);margin-bottom:12px}
+.event-list{max-height:400px;overflow-y:auto;font-family:monospace;font-size:12px}
+.event{border-bottom:1px solid rgba(255,255,255,.05);padding:8px 0}
+.event .type{color:var(--accent);font-weight:600}
+.event .time{color:#888}
+.event .data{color:#aaa}
+.status-ok{color:#4caf50}.status-warn{color:#ff9800}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/">POS</a>
+  <a href="/inventory">Inventory</a>
+  <a href="/dashboard" class="active">Dashboard</a>
+</nav>
+<main>
+  <div class="kpis" id="kpis"></div>
+  <div class="card">
+    <h2>📋 Recent Activity</h2>
+    <div class="event-list" id="events"></div>
+  </div>
+  <div class="card">
+    <h2>🏪 Store Status</h2>
+    <div id="storeStatus"></div>
+  </div>
+</main>
+<script>
+async function loadDashboard(){
+  const s=await fetch('/api/dashboard/summary');const summary=await s.json();
+  document.getElementById('kpis').innerHTML=`
+    <div class="kpi"><div class="num">${summary.transactions_today}</div><div class="label">Transactions Today</div></div>
+    <div class="kpi"><div class="num">${summary.sales_total}</div><div class="label">Sales Today</div></div>
+    <div class="kpi"><div class="num">${summary.products_in_catalog}</div><div class="label">Products</div></div>
+    <div class="kpi"><div class="num">${summary.low_stock_items}</div><div class="label">Low Stock</div></div>`;
+  const e=await fetch('/api/dashboard/recent');const events=await e.json();
+  document.getElementById('events').innerHTML=events.slice().reverse().map(ev=>`
+    <div class="event"><span class="time">${(ev.ts||'').slice(11,19)}</span> <span class="type">${ev.type}</span> <span class="data">${JSON.stringify(ev.payload).slice(0,120)}</span></div>
+  `).join('');
+  document.getElementById('storeStatus').innerHTML=`
+    <p>✅ <strong>Store ID:</strong> tie-dye-farms</p>
+    <p>✅ <strong>Mode:</strong> Cash-only | Offline | Local-first</p>
+    <p>✅ <strong>Event Log:</strong> ~/.lemonade/data/store_events.jsonl</p>
+    <p>✅ <strong>Database:</strong> ~/.lemonade/data/inventory.db</p>
+    <p class="status-ok">✅ All systems operational</p>`;
+}
+loadDashboard();
+setInterval(loadDashboard,10000);
+</script>
+</body>
+</html>

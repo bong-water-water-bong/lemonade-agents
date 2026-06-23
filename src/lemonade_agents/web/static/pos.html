@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lemonade POS</title>
+<style>
+:root{--bg:#1a1a2e;--card:#16213e;--accent:#e94560;--text:#eee;--green:#0f3460}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+nav{background:var(--card);padding:12px 24px;display:flex;gap:16px;border-bottom:2px solid var(--accent)}
+nav a{color:var(--accent);text-decoration:none;font-weight:600;padding:6px 12px;border-radius:4px}
+nav a:hover,nav a.active{background:var(--accent);color:#fff}
+main{max-width:1000px;margin:24px auto;padding:0 16px;display:grid;grid-template-columns:1fr 320px;gap:24px}
+@media(max-width:768px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border-radius:12px;padding:20px}
+.card h2{color:var(--accent);margin-bottom:16px;font-size:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:16px}
+.product-btn{background:var(--green);color:#fff;border:none;border-radius:8px;padding:12px 8px;cursor:pointer;font-size:13px;text-align:center;transition:.2s}
+.product-btn:hover{transform:translateY(-1px);filter:brightness(1.2)}
+.product-btn .name{font-weight:600;display:block}
+.product-btn .price{font-size:16px;font-weight:700;color:#ffd700;margin:4px 0}
+.cart-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.1)}
+.cart-item button{background:var(--accent);color:#fff;border:none;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:12px}
+.total{font-size:22px;font-weight:700;text-align:right;margin-top:12px;color:#ffd700}
+.checkout-section{margin-top:16px}
+.checkout-section input{width:100%;padding:12px;border-radius:8px;border:none;font-size:18px;margin-bottom:8px;background:#1a1a2e;color:#ffd700}
+.checkout-section button{width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:18px;font-weight:700;cursor:pointer}
+.receipt{background:#0a0a1a;border-radius:8px;padding:16px;margin-top:12px;font-family:monospace;font-size:13px;max-height:300px;overflow-y:auto}
+.quick-scan input{width:100%;padding:12px;border-radius:8px;border:1px solid var(--accent);background:var(--bg);color:#fff;font-size:16px;margin-bottom:12px}
+.cat-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px}
+.cat-tab{background:var(--green);color:#fff;border:none;border-radius:4px;padding:6px 12px;cursor:pointer;font-size:12px}
+.cat-tab.active{background:var(--accent)}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="active">POS</a>
+  <a href="/inventory">Inventory</a>
+  <a href="/dashboard">Dashboard</a>
+</nav>
+<main>
+  <div>
+    <div class="card">
+      <h2>🧾 Point of Sale</h2>
+      <div class="quick-scan">
+        <input type="text" id="scanInput" placeholder="Scan barcode or type product name..." autofocus>
+      </div>
+      <div class="cat-tabs" id="catTabs"></div>
+      <div class="grid" id="productGrid"></div>
+    </div>
+    <div class="card" id="receiptCard" style="display:none">
+      <h2>✅ Transaction Complete</h2>
+      <div class="receipt" id="receiptContent"></div>
+      <button onclick="newTransaction()" style="margin-top:12px;width:100%;padding:14px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:18px;cursor:pointer">New Transaction</button>
+    </div>
+  </div>
+  <div class="card" id="cartCard">
+    <h2>🛒 Cart</h2>
+    <div id="cartItems"><p style="color:#888">Cart is empty</p></div>
+    <div class="total" id="cartTotal">$0.00</div>
+    <div class="checkout-section">
+      <input type="number" id="cashInput" placeholder="Cash tendered ($)" step="0.01" min="0">
+      <button onclick="checkout()">💵 Complete Sale</button>
+    </div>
+  </div>
+</main>
+
+<script>
+let cart=[],products=[],categories=[],activeCat='';
+
+async function loadProducts(){
+  const r=await fetch('/api/inventory/products');
+  products=await r.json();
+  categories=[...new Set(products.map(p=>p.category))];
+  renderCatTabs();
+  renderProducts();
+}
+
+function renderCatTabs(){
+  const el=document.getElementById('catTabs');
+  el.innerHTML='<button class="cat-tab'+(activeCat?'':' active')+'" onclick="filterCat(\'\')">All</button>';
+  categories.forEach(c=>{
+    el.innerHTML+=`<button class="cat-tab${activeCat===c?' active':''}" onclick="filterCat('${c}')">${c}</button>`;
+  });
+}
+
+function filterCat(cat){activeCat=cat;renderCatTabs();renderProducts();}
+
+function renderProducts(){
+  const grid=document.getElementById('productGrid');
+  const filtered=activeCat?products.filter(p=>p.category===activeCat):products;
+  grid.innerHTML=filtered.map(p=>`
+    <button class="product-btn" onclick="addToCart('${p.sku}','${p.name.replace(/'/g,"\\'")}',${p.unit_price},${p.taxable})">
+      <span class="name">${p.name}</span>
+      <span class="price">$${parseFloat(p.unit_price).toFixed(2)}</span>
+      <small>${p.sku} | Stock: ${p.stock||0}</small>
+    </button>
+  `).join('');
+}
+
+async function addToCart(sku,name,price,taxable){
+  await fetch('/api/cart/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sku,name,price,quantity:1,taxable})});
+  await refreshCart();
+}
+
+async function removeFromCart(sku){
+  await fetch('/api/cart/remove',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sku})});
+  await refreshCart();
+}
+
+async function refreshCart(){
+  const r=await fetch('/api/cart');const d=await r.json();cart=d.cart;
+  const el=document.getElementById('cartItems');
+  if(!cart.length){el.innerHTML='<p style="color:#888">Cart is empty</p>';}
+  else{el.innerHTML=cart.map(i=>`<div class="cart-item"><span>${i.name} ×${i.quantity}</span><span>$${(i.price*i.quantity).toFixed(2)}</span><button onclick="removeFromCart('${i.sku}')">✕</button></div>`).join('');}
+  document.getElementById('cartTotal').textContent='$'+d.total.toFixed(2);
+}
+
+async function checkout(){
+  const cash=parseFloat(document.getElementById('cashInput').value)||0;
+  const total=cart.reduce((s,i)=>s+i.price*i.quantity,0);
+  if(cash<total){alert('Insufficient cash!');return;}
+  const r=await fetch('/api/cart/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cash_tendered:cash})});
+  const d=await r.json();
+  document.getElementById('cartCard').style.display='none';
+  document.getElementById('receiptCard').style.display='block';
+  const rcpt=d.receipt;
+  document.getElementById('receiptContent').innerHTML=`
+    <div style="text-align:center;margin-bottom:8px"><strong>Tie Dye Farms</strong><br>${new Date().toLocaleString()}</div>
+    ${rcpt.items.map(i=>`<div>${i.name} ×${i.quantity} @ $${i.price.toFixed(2)} = $${(i.price*i.quantity).toFixed(2)}</div>`).join('')}
+    <hr><div style="text-align:right"><strong>Total: $${rcpt.total.toFixed(2)}</strong><br>Cash: $${rcpt.cash_tendered.toFixed(2)}<br>Change: $${rcpt.change.toFixed(2)}</div>
+    <div style="text-align:center;margin-top:8px">Thank you! 🍋</div>
+  `;
+  document.getElementById('cashInput').value='';
+}
+
+function newTransaction(){document.getElementById('receiptCard').style.display='none';document.getElementById('cartCard').style.display='block';refreshCart();}
+
+document.getElementById('scanInput').addEventListener('keydown',async e=>{
+  if(e.key==='Enter'){const q=e.target.value.trim().toLowerCase();e.target.value='';
+    const match=products.find(p=>p.sku.toLowerCase()===q||p.name.toLowerCase()===q||(p.aliases||'').toLowerCase().includes(q));
+    if(match){await addToCart(match.sku,match.name,parseFloat(match.unit_price),match.taxable);}
+    else{alert('Product not found: '+q);}
+  }
+});
+
+loadProducts();refreshCart();
+setInterval(refreshCart,5000);
+</script>
+</body>
+</html>

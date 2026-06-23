@@ -9,6 +9,10 @@ description = "GAIA agents for the Lemonade Store suite — offline-first, AMD N
 requires-python = ">=3.10"
 dependencies = ["amd-gaia>=0.19.0"]
 
+[project.optional-dependencies]
+web = ["fastapi>=0.100", "uvicorn>=0.23"]
+dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.10"]
+
 [project.entry-points."gaia.agents"]
 lemonade-helper    = "lemonade_agents.helper.agent:LemonadeHelperAgent"
 lemonade-cashier   = "lemonade_agents.cashier.agent:CashierAgent"
@@ -28,6 +32,7 @@ lemonade-marketeer = "lemonade_agents.marketeer.agent:main"
 lemonade-supplier  = "lemonade_agents.supplier.agent:main"
 lemonade-reports   = "lemonade_agents.reports.agent:main"
 lemonade-security  = "lemonade_agents.security.agent:main"
+lemonade-serve     = "lemonade_agents.web.app:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/lemonade_agents"]

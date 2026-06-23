@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventory — Lemonade Store</title>
+<style>
+:root{--bg:#1a1a2e;--card:#16213e;--accent:#e94560;--text:#eee;--green:#0f3460;--gold:#ffd700}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+nav{background:var(--card);padding:12px 24px;display:flex;gap:16px;border-bottom:2px solid var(--accent)}
+nav a{color:var(--accent);text-decoration:none;font-weight:600;padding:6px 12px;border-radius:4px}
+nav a:hover,nav a.active{background:var(--accent);color:#fff}
+main{max-width:1200px;margin:24px auto;padding:0 16px;display:grid;grid-template-columns:1fr 400px;gap:24px}
+@media(max-width:768px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border-radius:12px;padding:20px}
+.card h2{color:var(--accent);margin-bottom:16px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 6px;text-align:left;border-bottom:1px solid rgba(255,255,255,.1)}
+th{color:var(--accent);font-size:11px;text-transform:uppercase}
+.low{color:#ff4444;font-weight:700}
+form{display:flex;flex-direction:column;gap:10px}
+form input,form select{background:var(--bg);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:10px;color:#fff;font-size:14px}
+form input:focus,form select:focus{border-color:var(--accent);outline:none}
+form button{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:12px;font-size:16px;font-weight:700;cursor:pointer}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.stat{background:var(--bg);border-radius:8px;padding:16px;text-align:center}
+.stat .num{font-size:28px;font-weight:700;color:var(--gold)}
+.stat .label{font-size:12px;color:#888;margin-top:4px}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/">POS</a>
+  <a href="/inventory" class="active">Inventory</a>
+  <a href="/dashboard">Dashboard</a>
+</nav>
+<main>
+  <div>
+    <div class="stats" id="stats"></div>
+    <div class="card">
+      <h2>📦 Product Catalog</h2>
+      <div style="margin-bottom:12px">
+        <input type="text" id="searchBox" placeholder="Search products..." style="width:100%;padding:10px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:var(--bg);color:#fff">
+      </div>
+      <div style="overflow-x:auto">
+        <table><thead><tr><th>SKU</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Threshold</th><th>Zone</th><th></th></tr></thead>
+        <tbody id="productTable"></tbody></table>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>➕ Onboard Product</h2>
+    <form id="onboardForm" onsubmit="onboardProduct(event)">
+      <input type="text" id="fSku" placeholder="SKU (e.g. COKE-12OZ)" required>
+      <input type="text" id="fName" placeholder="Product Name" required>
+      <select id="fCategory"><option value="convenience">Convenience</option><option value="vape">Vape</option><option value="tobacco">Tobacco</option><option value="soil">Soil</option><option value="general">General</option></select>
+      <input type="number" id="fPrice" placeholder="Unit Price ($)" step="0.01" required>
+      <input type="text" id="fAliases" placeholder="Aliases (pipe-separated: coke|cola)">
+      <input type="number" id="fStock" placeholder="Initial Stock" value="0">
+      <input type="number" id="fThreshold" placeholder="Reorder Threshold" value="0">
+      <input type="text" id="fZone" placeholder="Zone (e.g. A)">
+      <input type="text" id="fShelf" placeholder="Shelf (e.g. 1)">
+      <button type="submit">✅ Onboard Product</button>
+    </form>
+  </div>
+</main>
+<script>
+let products=[];
+async function loadProducts(){
+  const r=await fetch('/api/inventory/products');products=await r.json();
+  renderStats();renderTable();
+}
+function renderStats(){
+  const total=products.length;
+  const low=products.filter(p=>p.stock>0&&p.stock<=p.reorder_threshold).length;
+  const cats=new Set(products.map(p=>p.category)).size;
+  document.getElementById('stats').innerHTML=`
+    <div class="stat"><div class="num">${total}</div><div class="label">Total Products</div></div>
+    <div class="stat"><div class="num">${low}</div><div class="label">Low Stock</div></div>
+    <div class="stat"><div class="num">${cats}</div><div class="label">Categories</div></div>
+    <div class="stat"><div class="num">${products.reduce((s,p)=>s+(p.stock||0),0)}</div><div class="label">Total Units</div></div>`;
+}
+function renderTable(){
+  const q=(document.getElementById('searchBox').value||'').toLowerCase();
+  const filtered=q?products.filter(p=>p.name.toLowerCase().includes(q)||p.sku.toLowerCase().includes(q)):products;
+  document.getElementById('productTable').innerHTML=filtered.map(p=>`
+    <tr>
+      <td>${p.sku}</td><td>${p.name}</td><td>${p.category}</td>
+      <td>$${parseFloat(p.unit_price).toFixed(2)}</td>
+      <td class="${p.stock<=p.reorder_threshold&&p.reorder_threshold>0?'low':''}">${p.stock||0}</td>
+      <td>${p.reorder_threshold}</td><td>${p.zone||'-'}-${p.shelf||'-'}</td>
+      <td><button onclick="quickUpdate('${p.sku}',${p.stock||0})" style="background:var(--green);color:#fff;border:none;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:11px">Update</button></td>
+    </tr>`).join('');
+}
+async function quickUpdate(sku,current){
+  const qty=prompt('New stock quantity for '+sku+':',current);
+  if(qty===null)return;
+  await fetch('/api/inventory/products/'+sku,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({stock:parseInt(qty)})});
+  await loadProducts();
+}
+async function onboardProduct(e){
+  e.preventDefault();
+  const data={
+    sku:document.getElementById('fSku').value,
+    name:document.getElementById('fName').value,
+    category:document.getElementById('fCategory').value,
+    unit_price:document.getElementById('fPrice').value,
+    aliases:document.getElementById('fAliases').value,
+    stock:parseInt(document.getElementById('fStock').value)||0,
+    reorder_threshold:parseInt(document.getElementById('fThreshold').value)||0,
+    zone:document.getElementById('fZone').value,
+    shelf:document.getElementById('fShelf').value,
+  };
+  await fetch('/api/inventory/products',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+  e.target.reset();
+  await loadProducts();
+}
+document.getElementById('searchBox').addEventListener('input',renderTable);
+loadProducts();
+</script>
+</body>
+</html>
