@@ -15,8 +15,8 @@ from lemonade_agents._base import LemonadeAgent, LemonadeAgentConfig
 
 @dataclass
 class SecurityAgentConfig(LemonadeAgentConfig):
-    audit_path: Optional[str] = None   # path to audit logs
-    aibom_path: Optional[str] = None   # path to AIBOM manifests
+    audit_path: Optional[str] = None  # path to audit logs
+    aibom_path: Optional[str] = None  # path to AIBOM manifests
     docs_path: Optional[str] = None
 
 
@@ -25,7 +25,9 @@ class SecurityAgent(RAGToolsMixin, FileToolsMixin, LemonadeAgent):
 
     AGENT_ID = "lemonade-security-agent"
     AGENT_NAME = "Security Agent"
-    AGENT_DESCRIPTION = "Audit logs, agent identity, policy checks, and AIBOM manifests."
+    AGENT_DESCRIPTION = (
+        "Audit logs, agent identity, policy checks, and AIBOM manifests."
+    )
     CONVERSATION_STARTERS = [
         "Show recent audit log entries",
         "Check agent identity for last transaction",

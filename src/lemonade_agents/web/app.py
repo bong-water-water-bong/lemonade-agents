@@ -14,16 +14,12 @@ from __future__ import annotations
 import json
 import sqlite3
 import uuid
-from collections import defaultdict
-from dataclasses import asdict
 from datetime import UTC, datetime
-from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse, JSONResponse
 
 STATIC_DIR = Path(__file__).parent / "static"
 DATA_DIR = Path.home() / ".lemonade" / "data"
@@ -63,7 +59,9 @@ def _dept_from_type(event_type: str) -> str:
     return event_type.split(".")[0]
 
 
-def _read_events(event_type: str | None = None, limit: int = 50) -> list[dict[str, Any]]:
+def _read_events(
+    event_type: str | None = None, limit: int = 50
+) -> list[dict[str, Any]]:
     if not EVENTS_PATH.exists():
         return []
     events: list[dict[str, Any]] = []
@@ -85,6 +83,7 @@ def _read_events(event_type: str | None = None, limit: int = 50) -> list[dict[st
 # POS API
 # ---------------------------------------------------------------------------
 
+
 @app.post("/api/cart/add")
 async def cart_add(request: Request) -> JSONResponse:
     data = await request.json()
@@ -101,14 +100,25 @@ async def cart_add(request: Request) -> JSONResponse:
             item["quantity"] += quantity
             break
     else:
-        _current_cart.append({
-            "sku": sku, "name": name, "price": float(price),
-            "quantity": quantity, "taxable": data.get("taxable", True),
-        })
+        _current_cart.append(
+            {
+                "sku": sku,
+                "name": name,
+                "price": float(price),
+                "quantity": quantity,
+                "taxable": data.get("taxable", True),
+            }
+        )
 
-    _write_event("cashier.transaction.line_added", {
-        "sku": sku, "name": name, "price": str(price), "quantity": quantity,
-    })
+    _write_event(
+        "cashier.transaction.line_added",
+        {
+            "sku": sku,
+            "name": name,
+            "price": str(price),
+            "quantity": quantity,
+        },
+    )
 
     return JSONResponse({"cart": _current_cart, "total": _cart_total()})
 
@@ -129,22 +139,37 @@ async def cart_checkout(request: Request) -> JSONResponse:
     total = _cart_total()
 
     if cash_tendered < total:
-        raise HTTPException(400, f"Insufficient cash: ${cash_tendered:.2f} < ${total:.2f}")
+        raise HTTPException(
+            400, f"Insufficient cash: ${cash_tendered:.2f} < ${total:.2f}"
+        )
 
     change = round(cash_tendered - total, 2)
-    items = [{
-        "sku": i["sku"], "name": i["name"],
-        "quantity": i["quantity"], "unit_price": f"{i['price']:.2f}",
-    } for i in _current_cart]
+    items = [
+        {
+            "sku": i["sku"],
+            "name": i["name"],
+            "quantity": i["quantity"],
+            "unit_price": f"{i['price']:.2f}",
+        }
+        for i in _current_cart
+    ]
 
-    _write_event("cashier.transaction.closed", {
-        "total": f"{total:.2f}",
-        "cash_tendered": f"{cash_tendered:.2f}",
-        "change": f"{change:.2f}",
-        "items": items,
-    })
+    _write_event(
+        "cashier.transaction.closed",
+        {
+            "total": f"{total:.2f}",
+            "cash_tendered": f"{cash_tendered:.2f}",
+            "change": f"{change:.2f}",
+            "items": items,
+        },
+    )
 
-    receipt = {"items": _current_cart, "total": total, "cash_tendered": cash_tendered, "change": change}
+    receipt = {
+        "items": _current_cart,
+        "total": total,
+        "cash_tendered": cash_tendered,
+        "change": change,
+    }
     _current_cart = []
     return JSONResponse({"receipt": receipt, "success": True})
 
@@ -161,6 +186,7 @@ def _cart_total() -> float:
 # ---------------------------------------------------------------------------
 # Inventory API
 # ---------------------------------------------------------------------------
+
 
 def _get_db() -> sqlite3.Connection:
     conn = sqlite3.connect(str(DB_PATH))
@@ -179,7 +205,9 @@ def _get_db() -> sqlite3.Connection:
 async def inventory_list(category: str = "") -> JSONResponse:
     conn = _get_db()
     if category:
-        rows = conn.execute("SELECT * FROM products WHERE category=? ORDER BY name", (category,)).fetchall()
+        rows = conn.execute(
+            "SELECT * FROM products WHERE category=? ORDER BY name", (category,)
+        ).fetchall()
     else:
         rows = conn.execute("SELECT * FROM products ORDER BY category, name").fetchall()
     return JSONResponse([dict(r) for r in rows])
@@ -196,18 +224,30 @@ async def inventory_add(request: Request) -> JSONResponse:
         """INSERT OR REPLACE INTO products
            (sku, name, category, unit_price, taxable, reorder_threshold, zone, shelf, aliases, stock)
            VALUES (?,?,?,?,?,?,?,?,?,?)""",
-        (sku, data.get("name", ""), data.get("category", "general"),
-         str(data.get("unit_price", "0.00")), 1 if data.get("taxable", True) else 0,
-         data.get("reorder_threshold", 0), data.get("zone", ""), data.get("shelf", ""),
-         data.get("aliases", ""), data.get("stock", 0)),
+        (
+            sku,
+            data.get("name", ""),
+            data.get("category", "general"),
+            str(data.get("unit_price", "0.00")),
+            1 if data.get("taxable", True) else 0,
+            data.get("reorder_threshold", 0),
+            data.get("zone", ""),
+            data.get("shelf", ""),
+            data.get("aliases", ""),
+            data.get("stock", 0),
+        ),
     )
     conn.commit()
 
-    _write_event("inventory.created", {
-        "sku": sku, "name": data.get("name", ""),
-        "category": data.get("category", "general"),
-        "initial_quantity": data.get("stock", 0),
-    })
+    _write_event(
+        "inventory.created",
+        {
+            "sku": sku,
+            "name": data.get("name", ""),
+            "category": data.get("category", "general"),
+            "initial_quantity": data.get("stock", 0),
+        },
+    )
 
     return JSONResponse({"success": True, "sku": sku})
 
@@ -227,18 +267,27 @@ async def inventory_update(sku: str, request: Request) -> JSONResponse:
         """UPDATE products SET name=?, category=?, unit_price=?, taxable=?,
            reorder_threshold=?, zone=?, shelf=?, aliases=?, stock=?
            WHERE sku=?""",
-        (data.get("name", existing["name"]), data.get("category", existing["category"]),
-         str(data.get("unit_price", existing["unit_price"])),
-         1 if data.get("taxable", True) else 0,
-         data.get("reorder_threshold", existing["reorder_threshold"]),
-         data.get("zone", existing["zone"]), data.get("shelf", existing["shelf"]),
-         data.get("aliases", existing["aliases"]), new_stock, sku),
+        (
+            data.get("name", existing["name"]),
+            data.get("category", existing["category"]),
+            str(data.get("unit_price", existing["unit_price"])),
+            1 if data.get("taxable", True) else 0,
+            data.get("reorder_threshold", existing["reorder_threshold"]),
+            data.get("zone", existing["zone"]),
+            data.get("shelf", existing["shelf"]),
+            data.get("aliases", existing["aliases"]),
+            new_stock,
+            sku,
+        ),
     )
     conn.commit()
 
     delta = new_stock - old_stock
     if delta != 0:
-        _write_event("inventory.adjusted", {"sku": sku, "delta": delta, "reason": "manual update"})
+        _write_event(
+            "inventory.adjusted",
+            {"sku": sku, "delta": delta, "reason": "manual update"},
+        )
 
     return JSONResponse({"success": True})
 
@@ -254,6 +303,7 @@ async def inventory_delete(sku: str) -> JSONResponse:
 # ---------------------------------------------------------------------------
 # Dashboard API
 # ---------------------------------------------------------------------------
+
 
 @app.get("/api/dashboard/summary")
 async def dashboard_summary() -> JSONResponse:
@@ -273,14 +323,16 @@ async def dashboard_summary() -> JSONResponse:
         "SELECT COUNT(*) FROM products WHERE stock > 0 AND stock <= reorder_threshold"
     ).fetchone()[0]
 
-    return JSONResponse({
-        "store_id": _store_id,
-        "transactions_today": sales,
-        "sales_total": f"${sales_total:.2f}",
-        "products_in_catalog": product_count,
-        "low_stock_items": low_stock,
-        "pending_approvals": 0,
-    })
+    return JSONResponse(
+        {
+            "store_id": _store_id,
+            "transactions_today": sales,
+            "sales_total": f"${sales_total:.2f}",
+            "products_in_catalog": product_count,
+            "low_stock_items": low_stock,
+            "pending_approvals": 0,
+        }
+    )
 
 
 @app.get("/api/dashboard/recent")
@@ -293,6 +345,7 @@ async def dashboard_recent() -> JSONResponse:
 # Events API
 # ---------------------------------------------------------------------------
 
+
 @app.get("/api/events")
 async def events_list(limit: int = 50, type: str = "") -> JSONResponse:
     return JSONResponse(_read_events(event_type=type or None, limit=limit))
@@ -301,6 +354,7 @@ async def events_list(limit: int = 50, type: str = "") -> JSONResponse:
 # ---------------------------------------------------------------------------
 # Static pages
 # ---------------------------------------------------------------------------
+
 
 @app.get("/", response_class=HTMLResponse)
 async def pos_page() -> HTMLResponse:
@@ -319,6 +373,7 @@ async def dashboard_page() -> HTMLResponse:
 
 def main() -> None:
     import uvicorn
+
     uvicorn.run(app, host="127.0.0.1", port=8000, log_level="info")
 
 

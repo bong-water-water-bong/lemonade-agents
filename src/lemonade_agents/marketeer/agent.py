@@ -24,7 +24,9 @@ class MarketerAgent(RAGToolsMixin, FileToolsMixin, LemonadeAgent):
 
     AGENT_ID = "lemonade-marketeer-agent"
     AGENT_NAME = "Marketeer Agent"
-    AGENT_DESCRIPTION = "Promotions, discounts, loyalty programs, and customer messaging."
+    AGENT_DESCRIPTION = (
+        "Promotions, discounts, loyalty programs, and customer messaging."
+    )
     CONVERSATION_STARTERS = [
         "What promotions are active right now?",
         "Create a 10% discount for beverages",
