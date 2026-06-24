@@ -22,7 +22,9 @@ class AccountingAgentConfig(LemonadeAgentConfig):
     scratchpad_db_path: str = "~/.gaia/lemonade-accounting-scratchpad.db"
 
 
-class AccountingAgent(ScratchpadToolsMixin, RAGToolsMixin, FileToolsMixin, LemonadeAgent):
+class AccountingAgent(
+    ScratchpadToolsMixin, RAGToolsMixin, FileToolsMixin, LemonadeAgent
+):
     """Daily close, cash reconciliation, and financial summaries."""
 
     AGENT_ID = "lemonade-accounting-agent"

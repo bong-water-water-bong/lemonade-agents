@@ -11,7 +11,7 @@ dependencies = ["amd-gaia>=0.19.0"]
 
 [project.optional-dependencies]
 web = ["fastapi>=0.100", "uvicorn>=0.23"]
-dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.10"]
+dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.6", "mypy>=1.10"]
 
 [project.entry-points."gaia.agents"]
 lemonade-helper    = "lemonade_agents.helper.agent:LemonadeHelperAgent"
@@ -36,3 +36,7 @@ lemonade-serve     = "lemonade_agents.web.app:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/lemonade_agents"]
+
+[tool.mypy]
+files = ["src", "tests"]
+ignore_missing_imports = true

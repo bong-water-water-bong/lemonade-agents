@@ -17,8 +17,8 @@ from lemonade_agents._base import LemonadeAgent, LemonadeAgentConfig
 
 @dataclass
 class CashierAgentConfig(LemonadeAgentConfig):
-    events_path: Optional[str] = None   # path to cashier JSONL event log
-    docs_path: Optional[str] = None     # path to lemonade-cashier repo
+    events_path: Optional[str] = None  # path to cashier JSONL event log
+    docs_path: Optional[str] = None  # path to lemonade-cashier repo
 
 
 class CashierAgent(RAGToolsMixin, FileToolsMixin, LemonadeAgent):
@@ -64,7 +64,9 @@ class CashierAgent(RAGToolsMixin, FileToolsMixin, LemonadeAgent):
         def read_recent_transactions(limit: int = 10) -> list:
             """Read the most recent N transactions from the cashier event log."""
             if not self._events_path:
-                return [{"error": "events_path not configured — set CASHIER_EVENTS_PATH"}]
+                return [
+                    {"error": "events_path not configured — set CASHIER_EVENTS_PATH"}
+                ]
             path = Path(self._events_path)
             if not path.exists():
                 return [{"error": f"Event log not found: {path}"}]

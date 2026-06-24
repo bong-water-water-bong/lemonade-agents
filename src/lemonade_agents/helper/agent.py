@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import sys
 from dataclasses import dataclass
 from typing import Optional
 
@@ -35,7 +34,9 @@ class LemonadeHelperAgent(RAGToolsMixin, LemonadeAgent):
 
     AGENT_ID = "lemonade-helper"
     AGENT_NAME = "Lemonade Helper"
-    AGENT_DESCRIPTION = "Your guide to the Lemonade Store suite. Ask anything about the store."
+    AGENT_DESCRIPTION = (
+        "Your guide to the Lemonade Store suite. Ask anything about the store."
+    )
     CONVERSATION_STARTERS = [
         "What can you help me with?",
         "How do I do a daily close?",
@@ -87,7 +88,9 @@ class LemonadeHelperAgent(RAGToolsMixin, LemonadeAgent):
             for dept, description in DEPARTMENTS.items():
                 keywords = description.lower().split(", ")
                 if any(k in query_lower for k in keywords):
-                    return f"Route to: lemonade-{dept}\nCommand: lemonade-{dept} '{query}'"
+                    return (
+                        f"Route to: lemonade-{dept}\nCommand: lemonade-{dept} '{query}'"
+                    )
             return (
                 "No single department matched. Try lemonade-helper for general questions "
                 "or describe your need more specifically."
