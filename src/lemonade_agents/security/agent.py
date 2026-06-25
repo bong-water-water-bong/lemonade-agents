@@ -15,8 +15,8 @@ from lemonade_agents._base import LemonadeAgent, LemonadeAgentConfig
 
 @dataclass
 class SecurityAgentConfig(LemonadeAgentConfig):
-    audit_path: Optional[str] = None   # path to audit logs
-    aibom_path: Optional[str] = None   # path to AIBOM manifests
+    audit_path: Optional[str] = None  # path to audit logs
+    aibom_path: Optional[str] = None  # path to AIBOM manifests
     docs_path: Optional[str] = None
 
 
@@ -72,9 +72,7 @@ def main():
     parser.add_argument("--docs", default=os.getenv("SECURITY_DOCS_PATH"))
     args = parser.parse_args()
 
-    config = SecurityAgentConfig(
-        audit_path=args.audit, aibom_path=args.aibom, docs_path=args.docs
-    )
+    config = SecurityAgentConfig(audit_path=args.audit, aibom_path=args.aibom, docs_path=args.docs)
     agent = SecurityAgent(config)
 
     if args.query:

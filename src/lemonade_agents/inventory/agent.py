@@ -15,7 +15,7 @@ from lemonade_agents._base import LemonadeAgent, LemonadeAgentConfig
 
 @dataclass
 class InventoryAgentConfig(LemonadeAgentConfig):
-    db_path: Optional[str] = None    # path to inventory SQLite DB
+    db_path: Optional[str] = None  # path to inventory SQLite DB
     docs_path: Optional[str] = None  # path to lemonade-inventory repo
 
 

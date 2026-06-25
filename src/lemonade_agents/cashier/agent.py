@@ -17,8 +17,8 @@ from lemonade_agents._base import LemonadeAgent, LemonadeAgentConfig
 
 @dataclass
 class CashierAgentConfig(LemonadeAgentConfig):
-    events_path: Optional[str] = None   # path to cashier JSONL event log
-    docs_path: Optional[str] = None     # path to lemonade-cashier repo
+    events_path: Optional[str] = None  # path to cashier JSONL event log
+    docs_path: Optional[str] = None  # path to lemonade-cashier repo
 
 
 class CashierAgent(RAGToolsMixin, FileToolsMixin, LemonadeAgent):

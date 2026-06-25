@@ -14,5 +14,6 @@ __version__ = "0.1.0"
 def __getattr__(name: str):
     if name == "web_app":
         from lemonade_agents.web.app import app
+
         return app
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

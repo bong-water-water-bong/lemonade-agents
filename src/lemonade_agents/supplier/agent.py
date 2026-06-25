@@ -15,7 +15,7 @@ from lemonade_agents._base import LemonadeAgent, LemonadeAgentConfig
 
 @dataclass
 class SupplierAgentConfig(LemonadeAgentConfig):
-    orders_path: Optional[str] = None   # path to purchase orders data
+    orders_path: Optional[str] = None  # path to purchase orders data
     docs_path: Optional[str] = None
 
 

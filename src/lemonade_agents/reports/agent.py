@@ -17,7 +17,7 @@ from lemonade_agents._base import LemonadeAgent, LemonadeAgentConfig
 
 @dataclass
 class ReportsAgentConfig(LemonadeAgentConfig):
-    data_path: Optional[str] = None   # path to exported reports/CSV files
+    data_path: Optional[str] = None  # path to exported reports/CSV files
     docs_path: Optional[str] = None
     scratchpad_db_path: str = "~/.gaia/lemonade-reports-scratchpad.db"
 
